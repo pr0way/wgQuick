@@ -1,14 +1,56 @@
 #!/bin/bash
 
+# INIT VARS
 WIREGUARD_DIR="/etc/wireguard"
-WIREGUARD_CFG="wg0"
+WIREGUARD_CFG="wg0.conf"
+
+NETWORK_RANGE="10.0.0.1/24"
+PORT="51820"
+DNS_SERVERS="1.1.1.1, 1.0.0.1"
+
+SERVER_PUB_KEY_NAME="server_publickey"
+SERVER_PRIV_KEY_NAME="server_privatekey"
+
+CLIENT_PUB_KEY_NAME="peer1_publickey"
+CLIENT_PRIV_KEY_NAME="peer1_privatekey"
+
+function addPeersToConfig(){
+
+    # Add exist peer / create new one
+
+    # while true; do
+    # done
+
+}
+
+function createServerConfiguration(){
+
+    if [ ! -f $WIREGUARD_CFG ]; then
+
+    echo """
+    [Interface]
+    Address = ${NETWORK_RANGE}
+    ListenPort = ${PORT}  
+    DNS = ${DNS_SERVERS} 
+    PrivateKey = ${returnCert "$WIREGUARD_DIR/$SERVER_PRIV_KEY_NAME"} 
+
+    PostUp = iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+    PostDown = iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+
+    """ > $WIREGUARD_CFG
+
+    fi
+
+    # TODO: Interactive Peers adds
+
+}
 
 function generateServerCert(){
-    wg genkey | tee server_privatekey | wg pubkey > server_publickey
+    wg genkey | tee $SERVER_PRIV_KEY_NAME | wg pubkey > $SERVER_PUB_KEY_NAME
 }
 
 function generateClientCert(){
-    wg genkey | tee peer1_privatekey | wg pubkey > peer1_publickey
+    wg genkey | tee $CLIENT_PRIV_KEY_NAME | wg pubkey > $CLIENT_PUB_KEY_NAME
 }
 
 function isInstalled(){
@@ -32,6 +74,10 @@ function goDirectory(){
     else
         msg "Wireguard directory doesn't exist!"
     fi
+}
+
+function returnCert(){
+    return cat $1
 }
 
 function msg(){
@@ -67,14 +113,17 @@ function msg(){
     fi
 }
 
+
 function main() {
     if [ $# -eq 1 ]; then
 
         msg -o "Program started..."
 
         goDirectory
+        # TODO: Refactor isInstalled
         isInstalled wg
         isInstalled tee
+        isInstalled cat
         # generateServerCert
         # generateClientCert
 
